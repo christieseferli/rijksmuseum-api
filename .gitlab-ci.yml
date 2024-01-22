@@ -8,6 +8,7 @@ default:
 stages:
   - codeLinter
   - tests
+  - publishReport
 
 codeLinter-flake8:
   stage: codeLinter
@@ -23,6 +24,9 @@ tests-api:
   script:
     - docker build -f docker/Dockerfile.test_api -t ${DOCKER_USER}/${CI_PROJECT_NAME}/test-api .
     - docker run -i -v ${PWD}:${PWD} -w ${PWD} ${DOCKER_USER}/${CI_PROJECT_NAME}/test-api
+    - mkdir public
+    - mv report.html public
+    - ls -al public
   after_script:
     - docker rm $$(docker ps -a -q -f status=exited) 2>/dev/null || true
     - docker rm $$(docker ps -aq --filter status=exited --filter label=project=$${CI_PROJECT_NAME}) 2>/dev/null || true
@@ -30,6 +34,18 @@ tests-api:
     when: always
     expire_in: 1 week
     paths:
-      - ${PWD}
+      - public/
     reports:
       junit: report.html
+
+pages:
+  stage: publishReport
+  needs:
+    - job: tests-api
+      artifacts: true
+  script:
+#    - mv public/report.html public
+    - ls -al public
+  artifacts:
+    paths:
+      - public
