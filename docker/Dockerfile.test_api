@@ -1,0 +1,27 @@
+FROM ubuntu:20.04
+LABEL "project"="${CI_PROJECT_NAME:-rijksmuseum-api}"
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LANGUAGE=C.UTF-8
+
+RUN apt-get update -y && \
+    apt-get -y install apt-utils \
+                       python3 \
+                       python3-pip \
+                       nano
+WORKDIR /home/tester
+
+ENV KCVENVDIR /tmp/venv
+RUN mkdir -p ${KCVENVDIR}
+ENV PATH="${KCVENVDIR}/bin:${PATH}"
+
+COPY tests /home/tester/tests
+
+RUN pip3 install -U 'pip<23.1'
+RUN pip3 install pytest
+RUN pip3 install pytest-html
+RUN pip3 install requests
+
+RUN touch report.html
+ENTRYPOINT [ "pytest", "--html=report.html", "-s", "-v", "tests/integration//collection.py" ]
