@@ -1,0 +1,35 @@
+default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker info
+
+stages:
+  - codeLinter
+  - tests
+
+codeLinter-flake8:
+  stage: codeLinter
+  before_script:
+    - docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+  script:
+    - docker run -i -v ${PWD}:${PWD} -w ${PWD} alpine/flake8:3.5.0 ./tests
+
+tests-api:
+  stage: tests
+  before_script:
+    - docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+  script:
+    - docker build -f docker/Dockerfile.test_api -t ${DOCKER_USER}/${CI_PROJECT_NAME}/test-api .
+    - docker run -i -v ${PWD}:${PWD} -w ${PWD} ${DOCKER_USER}/${CI_PROJECT_NAME}/test-api
+  after_script:
+    - docker rm $$(docker ps -a -q -f status=exited) 2>/dev/null || true
+    - docker rm $$(docker ps -aq --filter status=exited --filter label=project=$${CI_PROJECT_NAME}) 2>/dev/null || true
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - ${PWD}
+    reports:
+      junit: report.html

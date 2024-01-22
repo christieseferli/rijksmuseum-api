@@ -1,0 +1,6 @@
+.pytest_cache/
+tests/integration/__pycache__/
+.idea/*
+assets
+*.html
+.venv
